@@ -18,7 +18,9 @@ ENV DOCKER_BUCKET="download.docker.com" \
     DOCKER_SHA256="a9e90a73c3cdfbf238f148e1ec0eaff5eb181f92f35bdd938fd7dab18e1c4647" \
     DIND_COMMIT="3b5fac462d21ca164b3778647420016315289034" \
     DOCKER_COMPOSE_VERSION="1.21.2" \
-    GITVERSION_VERSION="3.6.5"
+    NODE_VERSION="10.15.0" \
+    NODE_8_VERSION="8.11.0" \
+    GITVERSION_VERSION="4.0.0"
 
 # Install git, SSH, and other utilities
 RUN set -ex \
@@ -146,6 +148,21 @@ RUN set -ex \
     && cd .. \
     && rm -rf warmup \
     && rm -rf /tmp/NuGetScratch
+    
+#****************      NODEJS     ****************************************************
+
+ ENV N_SRC_DIR="$SRC_DIR/n"
+
+ RUN git clone https://github.com/tj/n $N_SRC_DIR \
+     && cd $N_SRC_DIR && make install \
+     && n $NODE_8_VERSION && npm install --save-dev -g grunt && npm install --save-dev -g grunt-cli && npm install --save-dev -g webpack \
+     && n $NODE_VERSION && npm install --save-dev -g grunt && npm install --save-dev -g grunt-cli && npm install --save-dev -g webpack \
+     && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+     && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+     && apt-get update && apt-get install -y --no-install-recommends yarn \
+     && cd / && rm -rf $N_SRC_DIR; 
+
+#****************      END NODEJS     ****************************************************
 
 # Install Powershell Core
 # See instructions at https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux
@@ -160,3 +177,6 @@ RUN set -ex \
     && tar zxf powershell.tar.gz -C /opt/microsoft/powershell/$POWERSHELL_VERSION \
     && rm powershell.tar.gz \
     && ln -s /opt/microsoft/powershell/$POWERSHELL_VERSION/pwsh /usr/bin/pwsh
+    
+RUN dotnet tool install --global Octopus.DotNet.Cli --version 6.2.3 \
+    && dotnet tool install --global GitVersion.Tool --version 5.0.0-beta1-99
